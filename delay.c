@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "delay.h"
 #include "bitcrusher.h"
 
 float* p_signal; //ptr to array holding signal samples

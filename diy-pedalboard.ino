@@ -1,5 +1,5 @@
-#include "delay.c"
-#include "bitcrusher.c"
+#include "delay.h"
+#include "bitcrusher.h"
 
 void setup() {
 
