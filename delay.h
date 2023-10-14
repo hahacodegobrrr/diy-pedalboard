@@ -3,7 +3,7 @@
 /*
     initializes delay module
 */
-void init();
+void initDelay();
 
 /*
     updates parameters of delay module

@@ -9,9 +9,7 @@ unsigned char delayFeedback = 1; //% of signal to re-feed
 
 unsigned int signalHead; //the point where the signal is being written
 
-void updateParameters(unsigned short a, unsigned char b);
-
-void init() {
+void initDelay() {
     updateParameters(0, 0);
 }
 
