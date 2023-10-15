@@ -26,7 +26,7 @@ void updateParameters(unsigned short delayTimeMs, unsigned char feedback) {
 
 }
 
-float writeSample(float input) {
+float applyDelayToSample(float input) {
     //get the current sample
     float* p_currentSample = p_signal + signalHead * sizeof(float);
     float currentSample = *p_currentSample;

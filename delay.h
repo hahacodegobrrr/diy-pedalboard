@@ -13,7 +13,8 @@ void initDelay();
 void updateParameters(unsigned short delayTimeMs, unsigned char feedback);
 
 /*
-    writes a sample to the array and returns the sample to be played back
+    applies the delay effect to the incoming sample
     input -> the incoming sample
+    returns input sample with the delay effect applied
 */
-float writeSample(float input);
+float applyDelayToSample(float input);
