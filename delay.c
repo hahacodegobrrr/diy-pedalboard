@@ -16,14 +16,12 @@ void initDelay() {
 void updateParameters(unsigned short delayTimeMs, unsigned char feedback) {
   delayTime = delayTimeMs;
   signalLength = (int)((float)delayTime / 1000 * getSampleRate() * sizeof(float));
+  free(p_signal);
   p_signal = (float*)malloc(signalLength);
   if (feedback != delayFeedback) {
     signalHead = 0;
     feedback = delayFeedback;
   }
-
-
-
 }
 
 float applyDelayToSample(float input) {
