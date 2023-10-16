@@ -3,5 +3,5 @@
 unsigned short sampleRate = 44100;
 
 unsigned short getSampleRate() {
-    return sampleRate;
+  return sampleRate;
 }

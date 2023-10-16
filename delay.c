@@ -10,35 +10,35 @@ unsigned char delayFeedback = 1; //% of signal to re-feed
 unsigned int signalHead; //the point where the signal is being written
 
 void initDelay() {
-    updateParameters(0, 0);
+  updateParameters(0, 0);
 }
 
 void updateParameters(unsigned short delayTimeMs, unsigned char feedback) {
-    delayTime = delayTimeMs;
-    signalLength = (int)((float)delayTime / 1000 * getSampleRate() * sizeof(float));
-    p_signal = (float*)malloc(signalLength);
-    if (feedback != delayFeedback) {
-        signalHead = 0;
-        feedback = delayFeedback;
-    }
+  delayTime = delayTimeMs;
+  signalLength = (int)((float)delayTime / 1000 * getSampleRate() * sizeof(float));
+  p_signal = (float*)malloc(signalLength);
+  if (feedback != delayFeedback) {
+    signalHead = 0;
+    feedback = delayFeedback;
+  }
 
 
 
 }
 
 float applyDelayToSample(float input) {
-    //get the current sample
-    float* p_currentSample = p_signal + signalHead * sizeof(float);
-    float currentSample = *p_currentSample;
+  //get the current sample
+  float* p_currentSample = p_signal + signalHead * sizeof(float);
+  float currentSample = *p_currentSample;
 
-    //attenuate existing data and add to input
-    currentSample *= (float)delayFeedback / 100;
-    currentSample += input;
+  //attenuate existing data and add to input
+  currentSample *= (float)delayFeedback / 100;
+  currentSample += input;
 
-    //update signalhead and send sample back to caller
-    signalHead++;
-    if (signalHead >= signalLength)
-        signalHead = 0;
+  //update signalhead and send sample back to caller
+  signalHead++;
+  if (signalHead >= signalLength)
+    signalHead = 0;
 
-    return currentSample;
+  return currentSample;
 }
