@@ -7,13 +7,16 @@ extern "C" {
 
 //pinout
 const char INPUT_PIN = A0;
-const char OUTPUT_PIN = A1;
+// const char OUTPUT_PIN = A1;
 
 unsigned long lastSampleTime = 0;
 
 void setup() {
+  //configure pins
   pinMode(INPUT_PIN, INPUT);
-  pinMode(OUTPUT_PIN, OUTPUT);
+  
+  //initialize modules
+  float* p_signalBuffer = initProcessing();
   initDelay();
 }
 
@@ -28,5 +31,5 @@ void loop() {
 }
 
 void writeSignalToSpeaker(float output) {
-
+  //h bridge to switch polarity, then write wave amplitude?
 }
