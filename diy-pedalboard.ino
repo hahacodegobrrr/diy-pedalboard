@@ -25,11 +25,8 @@ void loop() {
   if (t - lastSampleTime > (float)1000000 / getSampleRate() || t < lastSampleTime) {
     float sample = analogRead(INPUT_PIN);
     float output = processSample(sample);
-    writeSignalToSpeaker(output);
+    //write to speaker here
+    //h bridge to switch polarity, then write wave amplitude?
     lastSampleTime = t;
   }
-}
-
-void writeSignalToSpeaker(float output) {
-  //h bridge to switch polarity, then write wave amplitude?
 }
