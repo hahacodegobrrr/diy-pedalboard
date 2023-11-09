@@ -5,6 +5,9 @@
 //Initialise the LCD with the arduino. LiquidCrystal(rs, enable, d4, d5, d6, d7)
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
+const int MESSAGE_SIZE = 32;
+
+
 void setup() {
   // Switch on the LCD screen
   lcd.begin(16, 2);
@@ -13,11 +16,15 @@ void setup() {
 }
 
 void loop() {
-  lcd.print("Hello, world!");
-  delay(5000);
-  lcd.clear();
-  lcd.print("SSH is better");
-  delay(5000);
-  lcd.clear();
 
+  if (Serial.available() >= MESSAGE_SIZE) {
+    int i;
+    char message[MESSAGE_SIZE + 1];
+    message[MESSAGE_SIZE] = '\0';
+    for (i = 0; i < MESSAGE_SIZE; i++) {
+      message[i] = Serial.read();
+    }
+    lcd.clear();
+    lcd.print(message);
+  }
 }
