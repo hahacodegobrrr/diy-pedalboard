@@ -5,7 +5,7 @@
 //Initialise the LCD with the arduino. LiquidCrystal(rs, enable, d4, d5, d6, d7)
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-const int MESSAGE_SIZE = 32;
+const int MAX_MESSAGE_SIZE = 32;
 
 
 void setup() {
@@ -17,11 +17,11 @@ void setup() {
 
 void loop() {
 
-  if (Serial.available() >= MESSAGE_SIZE) {
+  if (Serial.available() >= MAX_MESSAGE_SIZE) {
     int i;
-    char message[MESSAGE_SIZE + 1];
-    message[MESSAGE_SIZE] = '\0';
-    for (i = 0; i < MESSAGE_SIZE; i++) {
+    char message[MAX_MESSAGE_SIZE + 1];
+    message[MAX_MESSAGE_SIZE] = '\0';
+    for (i = 0; i < MAX_MESSAGE_SIZE; i++) {
       message[i] = Serial.read();
     }
     lcd.clear();
