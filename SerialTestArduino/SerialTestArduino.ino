@@ -4,6 +4,8 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(13, Serial.read());
+  if (Serial.available()) {
+    digitalWrite(13, Serial.read());
+  }
   delay(100);
 }
