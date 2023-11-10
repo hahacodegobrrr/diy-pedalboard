@@ -11,6 +11,7 @@ const char MAX_MESSAGE_SIZE = 32;
 void setup() {
   // Switch on the LCD screen
   lcd.begin(16, 2);
+  Serial.begin(9600);
   // Print these words to my LCD screen
   //lcd.print("HELLO WORLD!");
 }
