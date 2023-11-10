@@ -5,7 +5,7 @@
 //Initialise the LCD with the arduino. LiquidCrystal(rs, enable, d4, d5, d6, d7)
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-const int MAX_MESSAGE_SIZE = 32;
+const char MAX_MESSAGE_SIZE = 32;
 
 
 void setup() {
