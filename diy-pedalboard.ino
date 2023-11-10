@@ -2,7 +2,7 @@
 
 const int MAX_MESSAGE_SIZE = 32;
 
-long lastScreenUpdate;
+unsigned int lastScreenUpdate;
 const char screenUpdatePeriod = 100; //in ms
 
 void setup(){
