@@ -3,10 +3,10 @@
 const int MAX_MESSAGE_SIZE = 32;
 
 unsigned int lastScreenUpdate;
-const char screenUpdatePeriod = 100; //in ms
+const char screenUpdatePeriod = 1000; //in ms
 
 void setup(){
-  Serial.begin(9600);
+  Serial1.begin(9600);
   lastScreenUpdate = millis();
 }
 
@@ -26,5 +26,5 @@ void loop(){
 }
 
 void sendMessageToScreen(char* text) {
-  Serial.write(text, sizeof(MAX_MESSAGE_SIZE));
+  Serial1.write(text, sizeof(MAX_MESSAGE_SIZE));
 }
