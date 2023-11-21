@@ -1,13 +1,14 @@
 #include "TunerUtils.h"
+#include <stdint.h>
 
 float noteTable[] = {
 
 };
 
-u_int8_t getNote(u_int16_t frequency) {
+uint8_t getNote(uint16_t frequency) {
 
 }
 
-u_int8_t* generateDisplayMessage() {
+uint8_t* generateDisplayMessage() {
 
 }

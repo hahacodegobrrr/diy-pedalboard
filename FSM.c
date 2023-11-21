@@ -1,12 +1,5 @@
 #include "FSM.h"
-
-struct State {
-  u_int8_t id;
-  u_int16_t knob1;
-  u_int16_t knob2;
-  u_int16_t knob3;
-  struct State* nextState;
-};
+#include <stdint.h>
 
 //tuner, chorus, delay, freeverb
 
