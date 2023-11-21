@@ -2,7 +2,12 @@
 #define TUNERUTILS_H
 #include <stdint.h>
 
-uint8_t getNote(uint16_t frequency);
+struct TunerNote {
+  uint8_t note;
+  float error;
+};
+
+struct TunerNote* getNote(uint16_t frequency);
 
 uint8_t* generateDisplayMessage();
 
