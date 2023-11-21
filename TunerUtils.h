@@ -1,8 +1,8 @@
 #ifndef TUNERUTILS_H
 #define TUNERUTILS_H
 
-char getNote(int frequency);
+u_int8_t getNote(u_int16_t frequency);
 
-char* generateDisplayMessage();
+u_int8_t* generateDisplayMessage();
 
 #endif

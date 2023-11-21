@@ -4,7 +4,7 @@
 
 
 const int MESSAGE_SIZE = 32; //in bytes
-const unsigned int SCREEN_UPDATE_PERIOD = 1000; //in ms
+const int SCREEN_UPDATE_PERIOD = 1000; //in ms
 
 //switch depending on which one we're using
 const int input = AUDIO_INPUT_LINEIN;
@@ -17,13 +17,15 @@ AudioInputI2S audioInput;   //audio shield line/mic in
 AudioOutputI2S audioOutput;  //audio shield line out
 AudioControlSGTL5000 audioShield;
 
-AudioAnalyzeNoteFrequency noteFreq;
 AudioAnalyzeFFT1024 fft;
 
+//a module cannot have multiple inputs -> send to a mixer
+//a module can have multiple outputs
 AudioConnection patchCord1(audioInput, 0, fft, 0);
 AudioConnection patchCord2(fft, 0, audioOutput, 0);
 
 void setup(){
+  AudioMemory(120); //change later (probably needs to increase)
   audioShield.enable();
   audioShield.inputSelect(input);
   audioShield.volume(0.5);
@@ -42,10 +44,9 @@ void loop(){
   }
 }
 
-/**
- * sends a message through Serial to Arduino
- * p_text -> pointer to a char array containing the message
- * length -> the size of the char array
+/** Sends a message through Serial to Arduino
+ *  p_text -> pointer to a char array containing the message
+ *  length -> the size of the char array
  */
 void sendMessageToScreen(char* p_text, int length) {
   Serial1.write(0); //signal beginning of message
