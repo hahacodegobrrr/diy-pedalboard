@@ -24,6 +24,8 @@ AudioAnalyzeFFT1024 fft;
 AudioConnection patchCord1(audioInput, 0, fft, 0);
 AudioConnection patchCord2(fft, 0, audioOutput, 0);
 
+struct State* currentState;
+
 void setup(){
   AudioMemory(120); //change later (probably needs to increase)
   audioShield.enable();
@@ -31,6 +33,8 @@ void setup(){
   audioShield.volume(0.5);
 
   fft.windowFunction(AudioWindowHanning1024);
+
+  currentState = getNextState(0);
 
   Serial1.begin(9600);
   lastScreenUpdate = millis();
