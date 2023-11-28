@@ -2,18 +2,21 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#include <stdint.h>
+
 #include "TunerUtils.h"
+#include "FSM.h"
 
 
-const int MESSAGE_SIZE = 32; //in bytes
-const int SCREEN_UPDATE_PERIOD = 1000; //in ms
-const int FFT_BIN_SIZE = 43; //hz
+const uint8_t MESSAGE_SIZE = 32; //in bytes
+const uint16_t SCREEN_UPDATE_PERIOD = 1000; //in ms
+const float FFT_BIN_SIZE = 43; //hz
 
 //switch depending on which one we're using
-const int input = AUDIO_INPUT_LINEIN;
-// const int input = AUDIO_INPUT_MIC;
+const uint8_t input = AUDIO_INPUT_LINEIN;
+// const uint8_t input = AUDIO_INPUT_MIC;
 
-unsigned int lastScreenUpdate;
+uint64_t lastScreenUpdate;
 
 //audio shit
 AudioInputI2S audioInput;   //audio shield line/mic in
@@ -29,7 +32,7 @@ AudioConnection patchCord2(fft, 0, audioOutput, 0);
 
 struct State* currentState;
 
-char message[];
+uint8_t screenMessage[MESSAGE_SIZE];
 
 void setup(){
   AudioMemory(120); //change later (probably needs to increase)
@@ -46,14 +49,14 @@ void setup(){
 }
 
 void loop(){
-  unsigned int now = millis();
+  uint64_t now = millis();
 
   //screen
   if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now) {
-    if (currentState.id == 0 && fft.available()) { //tuner mode
-      int loudestBin = 0;
+    if (currentState->id == 0 && fft.available()) { //tuner mode
+      uint16_t loudestBin = 0;
       float loudest = 0;
-      int i;
+      uint16_t i;
       for (i = 0; i < 40; i++) {
         float bin = fft.read(i);
         if (bin > loudest) {
@@ -71,7 +74,7 @@ void loop(){
  *  p_text -> pointer to a char array containing the message
  *  length -> the size of the char array
  */
-void sendMessageToScreen(char* p_text, int length) {
+void sendMessageToScreen(uint8_t* p_text, uint8_t length) {
   Serial1.write(0); //signal beginning of message
   Serial1.write(p_text, length);
 }
