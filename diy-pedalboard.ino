@@ -2,9 +2,12 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#include "TunerUtils.h"
+
 
 const int MESSAGE_SIZE = 32; //in bytes
 const int SCREEN_UPDATE_PERIOD = 1000; //in ms
+const int FFT_BIN_SIZE = 43; //hz
 
 //switch depending on which one we're using
 const int input = AUDIO_INPUT_LINEIN;
@@ -26,6 +29,8 @@ AudioConnection patchCord2(fft, 0, audioOutput, 0);
 
 struct State* currentState;
 
+char message[];
+
 void setup(){
   AudioMemory(120); //change later (probably needs to increase)
   audioShield.enable();
@@ -43,8 +48,22 @@ void setup(){
 void loop(){
   unsigned int now = millis();
 
+  //screen
   if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now) {
-    
+    if (currentState.id == 0 && fft.available()) { //tuner mode
+      int loudestBin = 0;
+      float loudest = 0;
+      int i;
+      for (i = 0; i < 40; i++) {
+        float bin = fft.read(i);
+        if (bin > loudest) {
+          loudest = bin;
+          loudestBin = i;
+        }
+      }
+      //could try linear interpolation here or smth
+      sendMessageToScreen(generateTunerDisplayMessage(loudestBin * FFT_BIN_SIZE), MESSAGE_SIZE);
+    }
   }
 }
 
