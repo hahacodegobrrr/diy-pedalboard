@@ -22,16 +22,31 @@ void loop() {
   if (Serial.available() >= MESSAGE_SIZE + 1) {
     while(Serial.read() != 0); //ensure read begins at front of message
     int i;
-    int r;
-    for (r = 0; r < 1; r++) {
-      for (i = 0; i < SCREEN_LENGTH; i++) {
-        char c = Serial.read();
-        if (c != lastMessage[i]) {
-          lcd.setCursor(i, r);
-          lcd.print(c);
-          lastMessage[i] = c;
-        }
-      }
-    }
+    char line1[SCREEN_LENGTH];
+    char line2[SCREEN_LENGTH];
+    for (i = 0; i < SCREEN_LENGTH; i++)
+      line1[i] = Serial.read();
+    for (i = 0; i < SCREEN_LENGTH; i++)
+      line2[i] = Serial.read();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(line1);
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
   }
+  // if (Serial.available() >= MESSAGE_SIZE + 1) {
+  //   while(Serial.read() != 0); //ensure read begins at front of message
+  //   int i;
+  //   int r;
+  //   for (r = 0; r < 2; r++) {
+  //     for (i = 0; i < SCREEN_LENGTH; i++) {
+  //       char c = Serial.read();
+  //       if (c != lastMessage[i]) {
+  //         lcd.setCursor(i, r);
+  //         lcd.print(c);
+  //         lastMessage[i] = c;
+  //       }
+  //     }
+  //   }
+  // }
 }
