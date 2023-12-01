@@ -36,7 +36,7 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=195,272
 
 void setup() {
   // allocate enough memory for the delay
-  AudioMemory(120);
+  AudioMemory(1000);
   
   // enable the audio shield
   sgtl5000_1.enable();
@@ -46,7 +46,7 @@ void setup() {
 
   // create 3 delay taps, which connect through a
   // mixer to the right channel output
-  delay1.delay(1, 500);
+  delay1.delay(1, 1000);
 }
 
 void loop() {
