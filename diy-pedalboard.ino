@@ -7,6 +7,12 @@
 #include <stdint.h> //extended int types
 #include <math.h> //extended math operations
 
+const uint8_t MESSAGE_SIZE = 32; //in bytes
+const uint16_t SCREEN_UPDATE_PERIOD = 200; //in ms
+const float FFT_BIN_SIZE = 43; //hz
+
+const float FFT_THRESHOLD = 0.0003; //anything below this is noise
+
 //used for tuner
 struct TunerNote {
   uint8_t note;
@@ -27,10 +33,6 @@ struct State {
   struct State* nextState;
 };
 
-const uint8_t MESSAGE_SIZE = 32; //in bytes
-const uint16_t SCREEN_UPDATE_PERIOD = 100; //in ms
-const float FFT_BIN_SIZE = 43; //hz
-
 //switch depending on which one we're using
 const uint8_t input = AUDIO_INPUT_LINEIN;
 // const uint8_t input = AUDIO_INPUT_MIC;
@@ -43,11 +45,11 @@ AudioInputI2S audioInput;   //audio shield line/mic in
 AudioOutputI2S audioOutput;  //audio shield line out
 AudioControlSGTL5000 audioShield;
 
-AudioAnalyzeFFT1024 fft;
+AudioAnalyzeNoteFrequency noteFreq;
 
 //a module cannot have multiple inputs -> send to a mixer
 //a module can have multiple outputs
-AudioConnection patchCord1(audioInput, 0, fft, 0);
+AudioConnection patchCord1(audioInput, 0, noteFreq, 0);
 AudioConnection patchCord2(audioInput, 0, audioOutput, 0);
 
 struct State* currentState;
@@ -61,7 +63,7 @@ void setup(){
   audioShield.inputSelect(input);
   audioShield.volume(0.5);
 
-  fft.windowFunction(AudioWindowHanning1024);
+  noteFreq.begin(0.15);
 
   currentState = getNextState(0);
 
@@ -72,21 +74,10 @@ void setup(){
 void loop(){
   uint64_t now = millis();
   //screen
-  if (lastScreenUpdate + SCREEN_UPDATE_PERIOD >= now) {
-    if (currentState->id == 0 && fft.available()) { //tuner mode
-      uint16_t loudestBin = 0;
-      float loudest = 0;
-      uint16_t i;
-      for (i = 0; i < 40; i++) {
-        float bin = fft.read(i);
-
-        if (bin > loudest) {
-          loudest = bin;
-          loudestBin = i;
-        }
-      }
-      //could try linear interpolation here or smth
-      uint8_t* msg = generateTunerDisplayMessage(loudestBin * FFT_BIN_SIZE);
+  if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now) {
+    lastScreenUpdate = now;
+    if (currentState->id == 0 && noteFreq.available()) { //tuner mode
+      uint8_t* msg = generateTunerDisplayMessage(noteFreq.read());
       sendMessageToScreen(msg, MESSAGE_SIZE);
     }
   }
@@ -105,40 +96,55 @@ void sendMessageToScreen(uint8_t* p_text, uint8_t length) {
 /** Converts a frequency into the corresponding note
  * frequency -> frequency, in hertz
  */
-void getNote(uint16_t frequency) {
-  float freqTo12Tone = (float)(fmod(log(frequency / FREQ_A4) / ln2, 1)) * 12;
-  
+void getNote(float frequency) {
+  float logStuff = log(frequency / FREQ_A4) / ln2;
+  float freqTo12Tone;
+  if (logStuff < 0)
+    freqTo12Tone = 12 - ((float)(fmod(-logStuff, 1)) * 12);
+  else
+    freqTo12Tone = ((float)(fmod(logStuff, 1)) * 12);
+
   float error = fmod(freqTo12Tone, 1);
-  uint8_t note;
+  uint16_t note = (uint16_t)freqTo12Tone;
   if (error >= 0.5) {
     error -= 1; //wrap around to next note's error
-    note = ((uint8_t)freqTo12Tone + 1) % 12;
-  } else {
-    note = (uint8_t)freqTo12Tone;
+    note = (note + 1) % 12;
   }
 
   tunerNote.note = note;
-  tunerNote.error = error;
+  tunerNote.error = error;  
 }
 
 /** Generates a screen message for the tuner based on a frequency
  * frequency -> frequency, in hertz
  * returns a pointer to the message
  */
-uint8_t* generateTunerDisplayMessage(uint16_t frequency) {
+uint8_t* generateTunerDisplayMessage(float frequency) {
   //message indices 0-13 have already been written to
-  getNote(frequency);
-  if (noteTable[tunerNote.note] >= 'a') {
-    tunerMessage[14] = noteTable[tunerNote.note] - 32;
-    tunerMessage[15] = '#';
+  if (frequency > 0) {
+    getNote(frequency);
+    if (noteTable[tunerNote.note] >= 'a') {
+      tunerMessage[14] = noteTable[tunerNote.note] - 32;
+      tunerMessage[15] = '#';
+    } else {
+      tunerMessage[14] = noteTable[tunerNote.note];
+      tunerMessage[15] = ' ';
+    }
+    int i;
+    for (i = 0; i < MESSAGE_SIZE / 2; i++) {
+      float transI = (i - 7.5) * 0.5 / 7.5; //transforms (0-15) to (-0.5-0.5)
+      if (tunerNote.error > 0)
+        tunerMessage[i + MESSAGE_SIZE / 2] = (transI < tunerNote.error && transI > 0)? '-' : ' ';
+      else
+        tunerMessage[i + MESSAGE_SIZE / 2] = (transI > tunerNote.error && transI < 0)? '-' : ' ';
+    }
   } else {
-    tunerMessage[14] = noteTable[tunerNote.note];
-    tunerMessage[15] = ' ';
-  }
-  int i;
-  for (i = 0; i < MESSAGE_SIZE / 2; i++) {
-    float transI = (i - 7.5) * 0.5 / 7.5; //transforms (0-15) to (-0.5-0.5)
-    tunerMessage[i + MESSAGE_SIZE / 2] = (tunerNote.error > 0)? (transI < tunerNote.error && transI > 0)? '-' : ' ' : (transI > tunerNote.error && transI < 0)? '-' : ' ';
+    tunerMessage[14] = '-';
+    tunerMessage[15] = '-';
+    int i;
+    for (i = 0; i < MESSAGE_SIZE / 2; i++) {
+      tunerMessage[i + MESSAGE_SIZE / 2] = ' ';
+    }
   }
 
   return &tunerMessage[0];

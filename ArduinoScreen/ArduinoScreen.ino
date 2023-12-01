@@ -16,6 +16,7 @@ void setup() {
   Serial.begin(9600);
   // Print these words to my LCD screen
   //lcd.print("HELLO WORLD!");
+  lcd.clear();
 }
 
 void loop() {
