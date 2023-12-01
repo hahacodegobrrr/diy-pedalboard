@@ -107,6 +107,7 @@ void sendMessageToScreen(uint8_t* p_text, uint8_t length) {
  */
 void getNote(uint16_t frequency) {
   float freqTo12Tone = (float)(fmod(log(frequency / FREQ_A4) / ln2, 1)) * 12;
+  //Equation for converting -> n = 12 * log(base(2))(fn / 440 Hz)
   
   float error = fmod(freqTo12Tone, 1);
   uint8_t note;
