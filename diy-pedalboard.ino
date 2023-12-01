@@ -121,30 +121,21 @@ void getNote(float frequency) {
  */
 uint8_t* generateTunerDisplayMessage(float frequency) {
   //message indices 0-13 have already been written to
-  if (frequency > 0) {
-    getNote(frequency);
-    if (noteTable[tunerNote.note] >= 'a') {
-      tunerMessage[14] = noteTable[tunerNote.note] - 32;
-      tunerMessage[15] = '#';
-    } else {
-      tunerMessage[14] = noteTable[tunerNote.note];
-      tunerMessage[15] = ' ';
-    }
-    int i;
-    for (i = 0; i < MESSAGE_SIZE / 2; i++) {
-      float transI = (i - 7.5) * 0.5 / 7.5; //transforms (0-15) to (-0.5-0.5)
-      if (tunerNote.error > 0)
-        tunerMessage[i + MESSAGE_SIZE / 2] = (transI < tunerNote.error && transI > 0)? '-' : ' ';
-      else
-        tunerMessage[i + MESSAGE_SIZE / 2] = (transI > tunerNote.error && transI < 0)? '-' : ' ';
-    }
+  getNote(frequency);
+  if (noteTable[tunerNote.note] >= 'a') {
+    tunerMessage[14] = noteTable[tunerNote.note] - 32;
+    tunerMessage[15] = '#';
   } else {
-    tunerMessage[14] = '-';
-    tunerMessage[15] = '-';
-    int i;
-    for (i = 0; i < MESSAGE_SIZE / 2; i++) {
-      tunerMessage[i + MESSAGE_SIZE / 2] = ' ';
-    }
+    tunerMessage[14] = noteTable[tunerNote.note];
+    tunerMessage[15] = ' ';
+  }
+  int i;
+  for (i = 0; i < MESSAGE_SIZE / 2; i++) {
+    float transI = (i - 7.5) * 0.5 / 7.5; //transforms (0-15) to (-0.5-0.5)
+    if (tunerNote.error > 0)
+      tunerMessage[i + MESSAGE_SIZE / 2] = (transI < tunerNote.error && transI > 0)? '-' : ' ';
+    else
+      tunerMessage[i + MESSAGE_SIZE / 2] = (transI > tunerNote.error && transI < 0)? '-' : ' ';
   }
 
   return &tunerMessage[0];
