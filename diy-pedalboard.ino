@@ -28,13 +28,11 @@ const float FREQ_A4 = 440;
 uint8_t noteTable[] = {'A','a','B','C','c','D','d','E','F','f','G','g'};
 struct TunerNote tunerNote;
 uint8_t tunerMessage[MESSAGE_SIZE] = {'T','U','N','E','R',' ',' ',' ','N','O','T','E',':',' '};
-
+uint8_t delayMessage[MESSAGE_SIZE] = {'D','E','L','A','Y',':',' ','-','-','-',' ','M','S'};
 //used for FSM
 struct State {
   uint8_t id;
-  uint16_t knob1;
-  uint16_t knob2;
-  uint16_t knob3;
+  uint16_t knob;
   struct State* nextState;
 };
 
@@ -71,6 +69,7 @@ AudioConnection delay2mixer2(delayEffect, 2, delayMixer, 2);
 AudioConnection in2mixer3(audioInput, 0, delayMixer, 3);
 AudioConnection in2mixer(audioInput, 0, delayMixer, 0);
 AudioConnection mixer2out(delayMixer, 0, audioOutput, 1);
+// AudioConnection in2out(audioInput, 0, audioOutput, 2);
 
 //controlled by knobs
 uint16_t delayPeriod = 500;
@@ -80,15 +79,39 @@ struct State* currentState;
 //buffer for message to be displayed on screen
 uint8_t screenMessage[MESSAGE_SIZE];
 
+//bit 0 -> delay
+uint8_t effectsFlags;
+
+const uint8_t cycleButtonPin = 16;
+Bounce cycleButton = Bounce(cycleButtonPin, 100);
+const uint8_t saveButtonPin = 22;
+Bounce saveButton = Bounce(saveButtonPin, 100);
+
+//knob runs from 521 to 1023
+const uint8_t knobPin = 14;
+
 void setup(){
   AudioMemory(1800); //change later (probably needs to increase)
   audioShield.enable();
   audioShield.inputSelect(input);
   audioShield.volume(0.5);
 
+  int i;
+  for (i = 14; i < MESSAGE_SIZE; i++) {
+    tunerMessage[i] = ' ';
+  }
+  for (i = 13; i < MESSAGE_SIZE; i++) {
+    delayMessage[i] = ' ';
+  }
+
   noteFreq.begin(0.15);
   
-  setDelayPeriod(delayPeriod);
+  effectsFlags = 0;
+  setDelayPeriod(100);
+
+  pinMode(cycleButtonPin, INPUT);
+  pinMode(saveButtonPin, INPUT);
+  pinMode(knobPin, INPUT);
 
   currentState = getNextState(0);
 
@@ -100,16 +123,47 @@ void setup(){
 
 void loop(){
   uint64_t now = millis();
-  //screen
-  if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now) {
-    lastScreenUpdate = now;
-    if (currentState->id == 0 && noteFreq.available()) { //tuner mode
+  if (cycleButton.update()) {
+    if (cycleButton.risingEdge()) {
+      currentState = getNextState(currentState);
+    }
+  }
+
+  //tuner
+  if (currentState->id == 0) {
+    effectsFlags = 0;
+    //screen
+    if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now && noteFreq.available()) {
+      lastScreenUpdate = now;
       uint8_t* msg = generateTunerDisplayMessage(noteFreq.read());
       sendMessageToScreen(msg, MESSAGE_SIZE);
     }
   }
 
-  if (lastDelayEnvelopeOn + DELAY_ENVELOPE_ON_PERIOD <= now) {
+  //delay
+  if (currentState->id == 1) {
+    effectsFlags |= 0x01;
+    if (saveButton.update()) {
+      if (saveButton.risingEdge()) {
+        uint16_t knob = analogRead(knobPin);
+        currentState->knob = knob;
+        setDelayPeriod(knobToDelayTime(knob));
+      }
+    }
+    //screen
+    if (lastScreenUpdate + SCREEN_UPDATE_PERIOD <= now) {
+      lastScreenUpdate = now;
+      uint16_t knob = analogRead(knobPin);
+      uint16_t msDelay = knobToDelayTime(knob);
+      //789
+      delayMessage[7] = (msDelay / 100) + '0';
+      delayMessage[8] = (msDelay / 10) % 10 + '0';
+      delayMessage[9] = msDelay % 10 + '0';
+      sendMessageToScreen(&delayMessage[0], MESSAGE_SIZE);
+    }
+  }
+
+  if (lastDelayEnvelopeOn + DELAY_ENVELOPE_ON_PERIOD <= now && effectsFlags & 0x01) {
     lastDelayEnvelopeOn = now;
     delayEnvelope.noteOn();
   }
@@ -180,10 +234,10 @@ uint8_t* generateTunerDisplayMessage(float frequency) {
 //FSM
 //tuner, chorus, delay, freeverb
 struct State stateTable[] = {
-  {.id = 0, .knob1 = 0, .knob2 = 0, .knob3 = 0, .nextState = &stateTable[1]},
-  {.id = 1, .knob1 = 0, .knob2 = 0, .knob3 = 0, .nextState = &stateTable[2]},
-  {.id = 2, .knob1 = 0, .knob2 = 0, .knob3 = 0, .nextState = &stateTable[3]},
-  {.id = 3, .knob1 = 0, .knob2 = 0, .knob3 = 0, .nextState = &stateTable[0]}
+  {.id = 0, .knob = 0, .nextState = &stateTable[1]},
+  {.id = 1, .knob = 0, .nextState = &stateTable[0]}
+  // {.id = 2, .knob = 0, .nextState = &stateTable[3]},
+  // {.id = 3, .knob = 0, .nextState = &stateTable[0]}
 };
 
 /** Get the next state in the FSM
@@ -196,9 +250,15 @@ struct State* getNextState(struct State* currentState) {
   return (*currentState).nextState;
 }
 
-void setDelayPeriod(uint8_t newDP) {
+void setDelayPeriod(uint16_t newDP) {
   delayPeriod = newDP;
   delayEffect.delay(0, delayPeriod);
   delayEffect.delay(1, delayPeriod * 2);
   delayEffect.delay(2, delayPeriod * 3);
+}
+
+
+uint16_t knobToDelayTime(uint16_t knobValue) {
+  //convert 521-1023 to 100-500
+  return (uint16_t)((knobValue - 521) * 400 / (float)502) + 100;
 }
