@@ -2,16 +2,21 @@
 #include <Audio.h> //for processing audio
 #include <Wire.h> //communication protocol (i2c)
 #include <SPI.h> //communication protocol
+#include <Bounce.h>
 
 //c libraries
 #include <stdint.h> //extended int types
 #include <math.h> //extended math operations
 
 const uint8_t MESSAGE_SIZE = 32; //in bytes
-const uint16_t SCREEN_UPDATE_PERIOD = 200; //in ms
 const float FFT_BIN_SIZE = 43; //hz
 
 const float FFT_THRESHOLD = 0.0003; //anything below this is noise
+
+
+const uint16_t SCREEN_UPDATE_PERIOD = 200; //in ms
+const uint16_t DELAY_ENVELOPE_ON_PERIOD = 100;
+const uint16_t DELAY_ENVELOPE_OFF_OFFSET = 10;
 
 //used for tuner
 struct TunerNote {
@@ -39,18 +44,36 @@ const uint8_t input = AUDIO_INPUT_LINEIN;
 
 //for tracking timing
 uint64_t lastScreenUpdate;
+uint64_t lastDelayEnvelopeOn;
+uint64_t lastDelayEnvelopeOff;
 
 //audio shit
 AudioInputI2S audioInput;   //audio shield line/mic in
 AudioOutputI2S audioOutput;  //audio shield line out
 AudioControlSGTL5000 audioShield;
 
+//delay
+AudioEffectEnvelope delayEnvelope;
+AudioEffectDelay delayEffect;
+AudioMixer4 delayMixer;
+
 AudioAnalyzeNoteFrequency noteFreq;
 
 //a module cannot have multiple inputs -> send to a mixer
 //a module can have multiple outputs
-AudioConnection patchCord1(audioInput, 0, noteFreq, 0);
-AudioConnection patchCord2(audioInput, 0, audioOutput, 0);
+AudioConnection patchCordTuner(audioInput, 0, noteFreq, 0);
+AudioConnection in2de(audioInput, delayEnvelope);
+AudioConnection de2delay(delayEnvelope, delayEffect);
+AudioConnection de2out(delayEnvelope, 0, audioOutput, 0);
+AudioConnection delay2mixer(delayEffect, 0, delayMixer, 0);
+AudioConnection delay2mixer1(delayEffect, 1, delayMixer, 1);
+AudioConnection delay2mixer2(delayEffect, 2, delayMixer, 2);
+AudioConnection in2mixer3(audioInput, 0, delayMixer, 3);
+AudioConnection in2mixer(audioInput, 0, delayMixer, 0);
+AudioConnection mixer2out(delayMixer, 0, audioOutput, 1);
+
+//controlled by knobs
+uint16_t delayPeriod = 500;
 
 struct State* currentState;
 
@@ -58,17 +81,21 @@ struct State* currentState;
 uint8_t screenMessage[MESSAGE_SIZE];
 
 void setup(){
-  AudioMemory(120); //change later (probably needs to increase)
+  AudioMemory(1800); //change later (probably needs to increase)
   audioShield.enable();
   audioShield.inputSelect(input);
   audioShield.volume(0.5);
 
   noteFreq.begin(0.15);
+  
+  setDelayPeriod(delayPeriod);
 
   currentState = getNextState(0);
 
   Serial1.begin(9600);
   lastScreenUpdate = millis();
+  lastDelayEnvelopeOn = lastScreenUpdate;
+  lastDelayEnvelopeOff = lastScreenUpdate + DELAY_ENVELOPE_OFF_OFFSET;
 }
 
 void loop(){
@@ -80,6 +107,15 @@ void loop(){
       uint8_t* msg = generateTunerDisplayMessage(noteFreq.read());
       sendMessageToScreen(msg, MESSAGE_SIZE);
     }
+  }
+
+  if (lastDelayEnvelopeOn + DELAY_ENVELOPE_ON_PERIOD <= now) {
+    lastDelayEnvelopeOn = now;
+    delayEnvelope.noteOn();
+  }
+  if (lastDelayEnvelopeOff + DELAY_ENVELOPE_ON_PERIOD <= now) {
+    lastDelayEnvelopeOff = now;
+    delayEnvelope.noteOff();
   }
 }
 
@@ -158,4 +194,11 @@ struct State* getNextState(struct State* currentState) {
   if (currentState == 0)
     return &stateTable[0];
   return (*currentState).nextState;
+}
+
+void setDelayPeriod(uint8_t newDP) {
+  delayPeriod = newDP;
+  delayEffect.delay(0, delayPeriod);
+  delayEffect.delay(1, delayPeriod * 2);
+  delayEffect.delay(2, delayPeriod * 3);
 }
